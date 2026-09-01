@@ -1,0 +1,46 @@
+# ---------------------------------------------------------------
+# Python-generated files
+# ---------------------------------------------------------------
+__pycache__/
+*.py[oc]
+*.pyc
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments / environment
+.venv/
+.python-version
+
+# ---------------------------------------------------------------
+# Local / session / raw files — never commit
+# ---------------------------------------------------------------
+.remember/
+.agents/
+.DS_Store
+Thumbs.db
+
+# Raw survey exports (contain PII: student emails) — keep local only.
+Student Programme Information*.csv
+Student Programme Information*.xlsx
+
+# ---------------------------------------------------------------
+# data/ — commit ONLY the files we actually use.
+#   - cleaned_students.csv   (real/raw student data)
+#   - corpus_train.csv       (448-row training data)
+#   - corpus_test.csv        (112-row test data)
+# Everything else under data/ is an intermediate or scratch artifact
+# (schemas, exploratory synthetic generations, lock files, UCSD dataset)
+# and stays local.
+# ---------------------------------------------------------------
+data/*
+!data/cleaned_students.csv
+!data/corpus_train.csv
+!data/corpus_test.csv
+
+# Models: committed (small, reproducible), but keep any large/local-only
+# checkpoints out if you add them.
+models/*
+!models/student_predictor.pkl
+.superpowers/

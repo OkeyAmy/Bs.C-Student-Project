@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: cgpa-prediction-api
+    runtime: docker
+    plan: free
+    dockerfilePath: deploy/api/Dockerfile
+    envVars:
+      - key: PORT
+        value: "8000"
+  - type: web
+    name: cgpa-prediction-ui
+    runtime: docker
+    plan: free
+    dockerfilePath: deploy/ui/Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: API_URL
+        value: http://cgpa-prediction-api.onrender.com

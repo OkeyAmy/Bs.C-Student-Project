@@ -1,0 +1,92 @@
+# Chapter 3 - Data Exploration Screenshots
+# df.head() <- cleaned_students.csv (61 real rows)
+# all others <- dataset_with_postgraduate_students.csv (164 combined)
+
+==============================================================================
+1. df.head()  -- first 5 rows (cleaned_students.csv, n=61 real)
+==============================================================================
+    student_id_hash                 institution_name  institution_name_suspect institution_type               faculty                                         department               programme__course_of_study qualification_type programme_category current_academic_level prior_gpa_bin prior_cgpa_bin  prior_tier  registered_prev  passed_prev  carryover_prev  carryover_prev_ambiguous avg_grade_prev  registered_curr  passed_curr  passed_curr_corrected  failed_curr target_gpa_bin target_cgpa_bin  target_tier at_risk  is_synthetic
+0  71670339fdbd74e3           Lagos State University                     False       University  Faculty Of Education                 Guidance and counseling psychology  BSCE Guidance and counseling psychology                BSc      Undergraduate              400 level   1.50 - 2.39    1.50 - 2.39         1.0             15.0         12.0             9.0                     False              C             15.0         12.0                  False          9.0    1.50 - 2.39     1.50 - 2.39          1.0    True         False
+1  22a13af077b6e762           Lagos State University                     False       University             Education  Educational Foundation and Counselling Psychology            B.ed Guidance and Counselling                BSc      Undergraduate              400 level   3.50 - 4.49    3.50 - 4.49         3.0             15.0         15.0             0.0                     False              C             15.0         15.0                  False          0.0    3.50 - 4.49     3.50 - 4.49          3.0   False         False
+2  997819bc7c8241b3           Lagos State University                     False      Polytechnic        Social Science                                 Mass Communication                    ND Mass Communication                 ND   National Diploma               Graduate   3.00 - 3.49    2.50 - 2.99         1.0             12.0         12.0             0.0                     False              C              8.0          8.0                  False          0.0    3.00 - 3.49     3.00 - 3.49          2.0   False         False
+3  5d19e5c1a6ac5273  Nnamdi Azikiwe University, Awka                     False       University      Physical science                                   Computer science                    B.Sc computer science                BSc      Undergraduate              400 level   3.50 - 4.49    3.50 - 4.49         3.0              9.0          9.0             0.0                     False              A              9.0          9.0                  False          0.0    3.50 - 4.49     3.50 - 4.49          3.0   False         False
+4  c78ca4f85b50378e  Nnamdi Azikiwe University, Awka                     False       University      Physical science                                   Computer science                     Bsc computer science                BSc      Undergraduate              400 level   3.50 - 4.49    3.50 - 4.49         3.0              9.0          9.0             0.0                     False              B              9.0          9.0                  False          0.0    3.50 - 4.49     3.50 - 4.49          3.0   False         False
+
+==============================================================================
+2. df.shape  (combined dataset)
+==============================================================================
+(164, 28)
+
+==============================================================================
+3. df.info()  -- column types & non-null counts (combined, n=164)
+==============================================================================
+<class 'pandas.DataFrame'>
+RangeIndex: 164 entries, 0 to 163
+Data columns (total 28 columns):
+ #   Column                      Non-Null Count  Dtype  
+---  ------                      --------------  -----  
+ 0   student_id_hash             164 non-null    str    
+ 1   institution_name            164 non-null    str    
+ 2   institution_name_suspect    164 non-null    bool   
+ 3   institution_type            164 non-null    str    
+ 4   faculty                     164 non-null    str    
+ 5   department                  164 non-null    str    
+ 6   programme__course_of_study  164 non-null    str    
+ 7   qualification_type          164 non-null    str    
+ 8   programme_category          164 non-null    str    
+ 9   current_academic_level      164 non-null    str    
+ 10  prior_gpa_bin               164 non-null    str    
+ 11  prior_cgpa_bin              164 non-null    str    
+ 12  prior_tier                  164 non-null    float64
+ 13  registered_prev             164 non-null    float64
+ 14  passed_prev                 164 non-null    float64
+ 15  carryover_prev              164 non-null    float64
+ 16  carryover_prev_ambiguous    164 non-null    bool   
+ 17  avg_grade_prev              164 non-null    str    
+ 18  registered_curr             164 non-null    float64
+ 19  passed_curr                 164 non-null    float64
+ 20  passed_curr_corrected       164 non-null    bool   
+ 21  failed_curr                 164 non-null    float64
+ 22  target_gpa_bin              164 non-null    str    
+ 23  target_cgpa_bin             164 non-null    str    
+ 24  target_tier                 164 non-null    int64  
+ 25  at_risk                     164 non-null    bool   
+ 26  is_synthetic                164 non-null    bool   
+ 27  generation_method           164 non-null    str    
+dtypes: bool(5), float64(7), int64(1), str(15)
+memory usage: 30.4 KB
+
+==============================================================================
+4. df.describe()  -- descriptive statistics (combined, n=164)
+==============================================================================
+       prior_tier  registered_prev  passed_prev  carryover_prev  registered_curr  passed_curr  failed_curr  target_tier
+count      164.00           164.00       164.00          164.00           164.00       164.00       164.00       164.00
+mean         2.43             7.53         6.60            1.09             7.51         6.67         0.96         2.49
+std          1.13             3.17         3.15            1.70             2.99         2.91         1.95         1.15
+min          0.00             1.00         0.00            0.00             1.00         1.00         0.00         0.00
+25%          2.00             5.00         4.75            0.00             5.00         5.00         0.00         2.00
+50%          3.00             8.00         7.00            0.00             8.00         6.50         0.00         3.00
+75%          3.00            10.00         9.00            2.00             9.00         9.00         1.00         3.00
+max          4.00            15.00        15.00            9.00            15.00        15.00         9.00         4.00
+
+==============================================================================
+5. Missing values check  df.isnull().sum()  (combined, n=164)
+==============================================================================
+Total missing values: 0
+
+==============================================================================
+6. Target class distribution  df["target_tier"].value_counts()  (combined)
+==============================================================================
+target_tier
+0    11
+1    21
+2    41
+3    58
+4    33
+
+==============================================================================
+7. At-risk distribution  df["at_risk"].value_counts()  (combined)
+==============================================================================
+at_risk
+False    123
+True      41
