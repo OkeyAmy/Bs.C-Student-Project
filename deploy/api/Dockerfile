@@ -10,7 +10,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
 COPY pyproject.toml ./
 COPY src ./src
 COPY api ./api
-COPY models ./models
 COPY data ./data
 COPY README.md ./
 
@@ -23,6 +22,10 @@ RUN pip install --no-cache-dir --upgrade pip \
         "joblib"
 
 ENV PYTHONPATH=/app:/app/src
+
+# Train the model at BUILD time (deterministic, ~6s) so the repo never needs
+# to carry a serialized .pkl — anyone rebuilding this image gets the model.
+RUN python -m school_project.train
 
 EXPOSE 8000
 CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]

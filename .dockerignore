@@ -15,6 +15,7 @@ chapter3_data_description.md
 project.md
 docker-compose.yml
 render.yaml
+models/
 *.log
 merged_data.csv
 merge.py

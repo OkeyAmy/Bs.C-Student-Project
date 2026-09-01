@@ -39,8 +39,7 @@ data/*
 !data/corpus_train.csv
 !data/corpus_test.csv
 
-# Models: committed (small, reproducible), but keep any large/local-only
-# checkpoints out if you add them.
-models/*
-!models/student_predictor.pkl
+# Models: generated at Docker build time (python -m school_project.train),
+# so they never need to live in the repo.
+models/
 .superpowers/
