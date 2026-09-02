@@ -13,6 +13,7 @@ Endpoints:
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+from api.comparison import compute_comparison
 from api.predict import get_model, predict
 from api.schema import PredictRequest, PredictResponse
 
@@ -48,6 +49,18 @@ def health() -> dict:
         return {"status": "ok", "model": "loaded"}
     except FileNotFoundError as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/comparison")
+def comparison() -> dict:
+    """Real-data comparison: students with vs without prior carryovers.
+
+    Uses only cleaned_students.csv (no synthetic rows). Result is cached.
+    """
+    try:
+        return compute_comparison()
+    except Exception as e:  # defensive
+        raise HTTPException(status_code=500, detail=f"comparison failed: {e}")
 
 
 @app.post("/predict", response_model=PredictResponse)

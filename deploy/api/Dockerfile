@@ -14,7 +14,7 @@ COPY data ./data
 COPY README.md ./
 
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir \
+    && pip install --no-cache-dir --timeout 100 --retries 10 \
         "fastapi>=0.115.0" \
         "uvicorn>=0.34.0" \
         "scikit-learn>=1.9.0" \

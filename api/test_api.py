@@ -32,6 +32,15 @@ def test_health(client):
     assert resp.json()["status"] == "ok"
 
 
+def test_comparison_shape(client):
+    resp = client.get("/comparison")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert set(data["groups"]) == {"no", "with"}
+    assert data["n_total"] == data["groups"]["no"]["n"] + data["groups"]["with"]["n"]
+    assert 0 < data["groups"]["no"]["at_risk_rate"] < data["groups"]["with"]["at_risk_rate"]
+
+
 def test_predict_good_student(client):
     resp = client.post("/predict", json=GOOD_PAYLOAD)
     assert resp.status_code == 200

@@ -9,9 +9,10 @@ COPY pyproject.toml ./
 COPY ui ./ui
 
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir \
+    && pip install --no-cache-dir --timeout 100 --retries 10 \
         "streamlit>=1.40.0" \
-        "requests>=2.32.0"
+        "requests>=2.32.0" \
+        "matplotlib"
 
 # API base URL is injected at run time (env var).
 ENV API_URL=http://localhost:8000

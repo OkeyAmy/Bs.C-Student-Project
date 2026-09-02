@@ -1,16 +1,17 @@
 # Student Academic Performance Prediction
 
-A machine-learning project that forecasts how a student will do next semester
-from their past record: carried or failed courses, pass rate, prior CGPA tier,
-faculty, institution, and qualification type.
+This machine-learning project tries to forecast how a student will perform in
+the coming semester, using only what was known before that semester began: how
+many courses they carried or failed, their pass rate, the CGPA tier they were
+on, plus their faculty, institution, and type of qualification.
 
-One model produces two outputs:
+The same model drives two answers:
 
-- **target_tier** — the coming semester's CGPA tier on a 0–4 scale (0 = failing,
-  4 = first class).
-- **at_risk** — a yes/no flag pulled straight from the tier: a predicted tier
-  of 0 or 1 counts as at-risk. It is not a second model; it is just the bottom
-  two tiers read off the tier prediction.
+- **target_tier** — the predicted CGPA tier for the next semester, on a 0–4
+  scale where 0 means failing and 4 means first class.
+- **at_risk** — a yes/no flag derived straight from that tier. A predicted tier
+  of 0 or 1 counts as at-risk. There is no second model here; it is simply the
+  bottom two tiers read off the tier prediction.
 
 ## Layout
 
@@ -23,7 +24,7 @@ One model produces two outputs:
 | `reports/` | Metric tables, confusion matrices, ROC plot, feature importance. |
 | `models/student_predictor.pkl` | The trained RBF SVM (`C=3, gamma=0.03`). |
 
-Set up with `uv sync`, then:
+Install with `uv sync`, then run:
 
 ```bash
 python -m school_project.build_corpus   # rebuild the corpus and 80:20 split
@@ -31,54 +32,72 @@ python -m school_project.train          # fit + save the model, print metrics
 python -m school_project.evaluation     # full metrics, CV, plots -> reports/
 ```
 
+## App (API + live dashboard)
+
+A containerised FastAPI service and a Streamlit dashboard sit on top of the
+model. The dashboard is organised into three sections reachable from the
+sidebar — predict a student, view the carryover comparison, and an about/model
+card.
+
+| Route | Purpose |
+| --- | --- |
+| `GET /health` | Liveness; confirms the model loaded. |
+| `POST /predict` | Predict one student's tier + at-risk flag from their prior-semester record (JSON). |
+| `GET /comparison` | Real-data stats behind the carryover report below (cached; real records only). |
+
+Run it locally with `python -m api.main` (served on port `8000`), then
+`streamlit run ui/app.py`. The UI reads the API base from the `API_URL` env
+var. Containers build from `deploy/` (the API image trains the model at build
+time, so no `.pkl` is ever committed).
+
 ## A word on honesty
 
-Only about sixty real student records were ever gathered. That is nowhere near
-enough to train a dependable classifier by itself, so synthetic students
-(generated from patterns in the real rows) make up most of the training data.
-Because those generated rows are treated as ground truth, the numbers in
-`reports/` are proof that the **pipeline runs** — they are not proof the model
-would work on a fresh real cohort. The single finding that does rest on the
-real records is the weakness profile: students who come in at tier 1–2 with a C
-average are the most likely to be at-risk the following semester.
+Only about sixty real student records were ever collected. On their own that is
+nowhere near enough to train a dependable classifier, so synthetic students —
+generated from the patterns found in the real rows — make up most of the
+training data. Because those generated rows are treated as ground truth, the
+figures in `reports/` prove that the **pipeline runs**; they do not prove the
+model would hold up on a brand new real cohort. The one result that genuinely
+rests on real records is the weakness profile: students entering at tier 1–2
+with a C average are the ones most likely to be at-risk next semester.
 
 ## What we actually tested along the way
 
 ### Algorithms tried
 
-Not every model was kept. The experiments ran through several algorithm
-families before settling on the final one:
+Not every model made the cut. Several algorithm families were tried before we
+settled on the final one:
 
-- **Random Forest (`evaluate.py`)** — used early on to test whether the LLM
-  augmentation actually helped, against majority-class and persistence
-  baselines. It also scores each fold in the real-data CV schemes. Dropped as
-  the final model because the SVM generalised better on the synthetic holdout.
-- **Gradient Boosting** — a GBM (sklearn gradient boosting, per the pre-tuning
-  pipeline) was tuned first but swapped out for the SVM after tuning; it never
-  became the committed model.
+- **Random Forest (`evaluate.py`)** — used early to test whether LLM
+  augmentation helped at all, scored against majority-class and persistence
+  baselines. It also scores every fold in the real-data CV schemes. It was
+  dropped as the final model because the SVM generalised better on the
+  synthetic holdout.
+- **Gradient Boosting** — an sklearn gradient-boosted tree was tuned first but
+  replaced with the SVM after tuning; it never became the committed model.
 - **RBF SVM (`SVC(C=3, gamma=0.03)`, final)** — the tuned winner in
-  `train.py`/`evaluation.py`. Chosen because on the synthetic corpus it edged
-  out the boosted tree model on tier accuracy and stayed stable on at-risk.
+  `train.py`/`evaluation.py`. It edged out the boosted trees on tier accuracy
+  over the synthetic corpus and stayed stable on at-risk.
 - **Baselines** — majority-class, persistence (prior tier == target tier),
-  prior-tier-only SVM, and trivial prior-direct. These set the floor that the
-  full model must beat.
+  prior-tier-only SVM, and trivial prior-direct. These set the floor the full
+  model has to clear.
 
-The comparison table below is the head-to-head evidence for why the full
-feature SVM is the final model.
+The comparison table further down is the head-to-head evidence behind choosing
+the full-feature SVM.
 
 ### The overfitting problem and the fix
 
-The at-risk label is easy to make trivially predictable if the generator is too
-polished. An early version of the synthetic corpus separated at-risk perfectly,
-and the model returned **at-risk = 1.000** on every metric. That is
-memorisation, not learning. How we diagnosed it:
+At-risk is all too easy to make trivially predictable when the generator is
+over-polished. An early version of the synthetic corpus separated at-risk
+cleanly, and the model returned **at-risk = 1.000** across every metric. That
+is memorisation, not learning. How we diagnosed it:
 
-- Every SVM setting on the old corpus still gave at-risk 1.000, which pointed
-  squarely at the **generator** rather than the model.
-- The generator was rewritten so at-risk is genuinely hard to separate:
-  carryover and pass rate are noisy projections of the tier, and a **5%
-  label-flip** term means that even a flawless predictor tops out around 0.95
-  balanced accuracy on at-risk.
+- Every SVM setting on the old corpus still produced at-risk 1.000, which
+  pointed squarely at the **generator** rather than at the model.
+- The generator was rewritten so that at-risk is genuinely hard to separate:
+  carryover and pass rate are deliberately noisy projections of the tier, and a
+  **5% label-flip** term means that even a flawless predictor tops out around
+  0.95 balanced accuracy on at-risk.
 - After the change the scores became honest: training ≈ test, CV ≈ holdout, and
   nothing sits at 1.000.
 
@@ -96,18 +115,18 @@ holdout:
 What this tells us:
 
 - The full feature set beats the prior-tier-only model on tier accuracy
-  (0.857 vs 0.562) and on at-risk balanced accuracy (0.852 vs 0.740). The extra
-  features — pass rate, carryover, faculty, institution — add real signal
-  beyond last semester's tier.
-- The silly baseline of just repeating the prior tier manages only 0.661 tier
-  accuracy and 0.493 balanced, so the model clearly does better than copying.
-- The prior-tier-only model has higher at-risk recall (0.786) but a weaker
-  overall balance — a trade-off worth mentioning in the write-up.
+  (0.857 vs 0.562) and on at-risk balanced accuracy (0.852 vs 0.740). Pass
+  rate, carryover, faculty, and institution each add signal beyond last
+  semester's tier.
+- The naive baseline of merely repeating the prior tier manages only 0.661 tier
+  accuracy and 0.493 balanced, so the model is clearly doing more than copying.
+- The prior-tier-only model does score higher on at-risk recall (0.786) but has
+  a weaker overall balance — a trade-off worth mentioning in the write-up.
 
 ### Did augmentation actually help? (Random-Forest test)
 
 Before the synthetic-corpus pipeline existed, a dedicated experiment in
-`evaluate.py` asked whether LLM-generated rows help at all, using a Random
+`evaluate.py` asked whether LLM-generated rows helped at all, using a Random
 Forest scored on the untouched real test set:
 
 - Baselines set the floor: majority-class and persistence
@@ -115,9 +134,9 @@ Forest scored on the untouched real test set:
 - Repeated CV over the **real rows only** (n=56) estimated how much signal
   exists beyond persistence, and a 3-way comparison ("real-only training" vs
   "+LLM-synthetic") measured the augmentation effect on at-risk detection.
-- The result was a mostly **null-to-modest** augmentation effect on the tiny
-  real test (11 rows, 1–4 at-risk) — differences below ~0.09 are within one
-  test row. This is why the project pivoted from "augment the 45 real rows"
+- The outcome was mostly a **null-to-modest** augmentation effect on the tiny
+  real test (11 rows, 1–4 at-risk) — differences under ~0.09 sit within one
+  test row. That is why the project pivoted from "augment the 45 real rows"
   to the fuller synthetic corpus approach.
 
 ### Holdout versus cross-validation
@@ -130,16 +149,16 @@ stratified CV on the training set:
 | tier balanced acc | 0.838 | 0.855 ± 0.046 |
 | at_risk balanced acc | 0.852 | 0.810 ± 0.095 |
 
-CV averages over many splits instead of one lucky draw, so it is the more
-defensible headline. Holdout and CV line up closely, which supports the
-no-overfit reading.
+CV averages across many splits rather than one lucky draw, so it is the more
+defensible headline. The two line up closely, which supports the no-overfit
+reading.
 
 ### Real-data control
 
 We also ran the synthetic-trained model over the real records. It looks strong
-on its own holdout (tier 0.857) but falls to roughly **tier 0.475** on the real
-rows. That steep drop is the clearest sign that synthetic training does not
-transfer to real students, and it is exactly why the thesis frames the demo
+on its own holdout (tier 0.857) but drops to roughly **tier 0.475** on the real
+rows. That steep fall is the clearest sign that synthetic training does not
+transfer to real students, and it is exactly why the thesis presents the demo
 scores as a method check rather than a claim of generalisation.
 
 ### Data-quality checks
@@ -168,8 +187,42 @@ scores as a method check rather than a claim of generalisation.
   label-flip, giving a corpus that stays honest and stable across
   train/test/CV. This is the generator behind the committed data.
 
-## Chapter 3 plots
+## Carryover report: at-risk rates with vs without previous semester carryovers
 
-`chapter3_plots/` holds the data-exploration figures for the thesis: tier
-distributions, prior-tier distribution, academic level, faculty, correlation
-heatmap, at-risk rates, and dataset composition.
+This speaks to (new) thesis objective 1 — comparing academic performance and
+at-risk rates of students who carried courses last semester against those who
+did not.
+
+### Headline (real records, n=59)
+
+| Prior-semester carryovers | n | At-risk rate |
+| --- | --- | --- |
+| None (0) | 42 | **4.8%** (2 of 42) |
+| Any (≥ 1) | 17 | **17.6%** (3 of 17) |
+
+Students who carried courses run roughly **3.7×** the at-risk rate of those who
+did not (17.6% vs 4.8%, odds ratio ≈ 4.29).
+
+### Is the difference significant?
+
+No — not on this sample. Chi-square gives p = 0.274 and Fisher's exact test
+p = 0.138 (one-sided), so the gap is **directionally consistent but not
+statistically reliable**. With only 5 at-risk students across 59 rows, a χ²
+test cannot tell a real carryover signal apart from random sampling. The honest
+reading is: *the data points that way, and a bigger cohort is needed to settle
+it* — not "carrying courses causes at-risk."
+
+### Why this is the honest framing
+
+This report leans only on the real records (`data/cleaned_students.csv`); the
+synthetic corpus plays no part, so the figures above are what the survey data
+itself says. The synthetic world agrees directionally (carryover ≥ 3 → ≈20%
+at-risk vs ≈7% below threshold), but that is a *defined* relationship inside
+the generator, not real-world evidence.
+
+### What would make it conclusive
+
+- A larger real cohort (at these base rates the gap becomes testable around
+  n ≈ 200–300).
+- Per-course data, which would let the analysis move from "had carryovers," a
+  coarse semester-level count, to which courses and how many credits.
