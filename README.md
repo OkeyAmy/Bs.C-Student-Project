@@ -9,14 +9,14 @@ The same model drives two answers:
 
 ## Layout
 
-| Path | Purpose |
-| --- | --- |
-| `data/cleaned_students.csv` | The real student records this project rests on. |
-| `data/corpus_train.csv` | 448 synthetic training rows the model learns from. |
-| `data/corpus_test.csv` | 112 synthetic holdout rows used for evaluation. |
-| `src/school_project/` | All the code, from cleaning through evaluation. |
-| `reports/` | Metric tables, confusion matrices, ROC plot, feature importance. |
-| `models/student_predictor.pkl` | The trained RBF SVM (`C=3, gamma=0.03`). |
+| Path                           | Purpose                                                          |
+| ------------------------------ | ---------------------------------------------------------------- |
+| `data/cleaned_students.csv`    | The real student records this project rests on.                  |
+| `data/corpus_train.csv`        | 448 synthetic training rows the model learns from.               |
+| `data/corpus_test.csv`         | 112 synthetic holdout rows used for evaluation.                  |
+| `src/school_project/`          | All the code, from cleaning through evaluation.                  |
+| `reports/`                     | Metric tables, confusion matrices, ROC plot, feature importance. |
+| `models/student_predictor.pkl` | The trained RBF SVM (`C=3, gamma=0.03`).                         |
 
 Install with `uv sync`, then run:
 
@@ -30,11 +30,11 @@ python -m school_project.evaluation     # full metrics, CV, plots -> reports/
 
 A containerized FastAPI service and a Streamlit dashboard are built on top of the model. The dashboard is organised into three sections reachable from the sidebar — predict a student, view the carryover comparison, and an about/model card.
 
-| Route | Purpose |
-| --- | --- |
-| `GET /health` | Liveness; confirms the model loaded. |
-| `POST /predict` | Predict one student's tier + at-risk flag from their prior-semester record (JSON). |
-| `GET /comparison` | Real-data stats behind the carryover report below (cached; real records only). |
+| Route             | Purpose                                                                            |
+| ----------------- | ---------------------------------------------------------------------------------- |
+| `GET /health`     | Liveness; confirms the model loaded.                                               |
+| `POST /predict`   | Predict one student's tier + at-risk flag from their prior-semester record (JSON). |
+| `GET /comparison` | Real-data stats behind the carryover report below (cached; real records only).     |
 
 Run it locally with `python -m api.main` (served on port `8000`), then `streamlit run ui/app.py`. The UI reads the API base from the `API_URL` env var. Containers build from `deploy/` (the API image trains the model at build time, so no `.pkl` is ever committed).
 
@@ -67,11 +67,11 @@ At-risk is all too easy to make trivially predictable when the generator is over
 
 From `reports/model_comparison.csv`, three models scored on the same 112-row holdout:
 
-| Model | tier acc | tier bal | at_risk bal | at_risk rec |
-| --- | --- | --- | --- | --- |
-| **Full-feature SVM (final)** | **0.857** | **0.838** | **0.852** | 0.714 |
-| prior_tier-only SVM | 0.562 | 0.581 | 0.740 | 0.786 |
-| Trivial baseline (reuse prior_tier) | 0.661 | 0.493 | — | — |
+| Model                               | tier acc  | tier bal  | at_risk bal | at_risk rec |
+| ----------------------------------- | --------- | --------- | ----------- | ----------- |
+| **Full-feature SVM (final)**        | **0.857** | **0.838** | **0.852**   | 0.714       |
+| prior_tier-only SVM                 | 0.562     | 0.581     | 0.740       | 0.786       |
+| Trivial baseline (reuse prior_tier) | 0.661     | 0.493     | —           | —           |
 
 What we can take from this:
 
@@ -91,10 +91,10 @@ Before the synthetic-corpus pipeline existed, a dedicated experiment in `evaluat
 
 From `reports/scores_holdout_vs_cv.csv`, the single 20%-holdout against 10-fold stratified CV on the training set:
 
-| Metric | Holdout | CV mean (± std) |
-| --- | --- | --- |
-| tier balanced acc | 0.838 | 0.855 ± 0.046 |
-| at_risk balanced acc | 0.852 | 0.810 ± 0.095 |
+| Metric               | Holdout | CV mean (± std) |
+| -------------------- | ------- | --------------- |
+| tier balanced acc    | 0.838   | 0.855 ± 0.046   |
+| at_risk balanced acc | 0.852   | 0.810 ± 0.095   |
 
 CV averages across many splits rather than one lucky draw, so it is the more defensible headline. The two line up closely, which supports the no-overfit reading.
 
@@ -195,22 +195,22 @@ This speaks to (new) thesis objective 1 — comparing academic performance and a
 
 ### Headline (real records, n=59)
 
-| Prior-semester carryovers | n | At-risk rate |
-| --- | --- | --- |
-| None (0) | 42 | **4.8%** (2 of 42) |
-| Any (≥ 1) | 17 | **17.6%** (3 of 17) |
+| Prior-semester carryovers | n   | At-risk rate        |
+| ------------------------- | --- | ------------------- |
+| None (0)                  | 42  | **4.8%** (2 of 42)  |
+| Any (≥ 1)                 | 17  | **17.6%** (3 of 17) |
 
 Students who carried courses run roughly **3.7×** the at-risk rate of those who did not (17.6% vs 4.8%, odds ratio ≈ 4.29).
 
 ### Is the difference significant?
 
-No — not on this sample. Chi-square gives p = 0.274 and Fisher's exact test p = 0.138 (one-sided), so the gap is **directionally consistent but not statistically reliable**. With only 5 at-risk students across 59 rows, a χ² test cannot tell a real carryover signal apart from random sampling. The honest reading is: *the data points that way, and a bigger cohort is needed to settle it* — not "carrying courses causes at-risk."
+No — not on this sample. Chi-square gives p = 0.274 and Fisher's exact test p = 0.138 (one-sided), so the gap is **directionally consistent but not statistically reliable**. With only 5 at-risk students across 59 rows, a χ² test cannot tell a real carryover signal apart from random sampling. The honest reading is: _the data points that way, and a bigger cohort is needed to settle it_ — not "carrying courses causes at-risk."
 
 ### Why this is the honest framing
 
-This report leans only on the real records (`data/cleaned_students.csv`); the synthetic corpus plays no part, so the figures above are what the survey data itself says. The synthetic world agrees directionally (carryover ≥ 3 → ≈20% at-risk vs ≈7% below threshold), but that is a *defined* relationship inside the generator, not real-world evidence.
+This report leans only on the real records (`data/cleaned_students.csv`); the synthetic corpus plays no part, so the figures above are what the survey data itself says. The synthetic world agrees directionally (carryover ≥ 3 → ≈20% at-risk vs ≈7% below threshold), but that is a _defined_ relationship inside the generator, not real-world evidence.
 
 ### What would make it conclusive
 
 - A larger real cohort (at these base rates the gap becomes testable around n ≈ 200–300).
-- Per-course data, which would let the analysis move from "had carryovers," a coarse semester-level count, to which courses and how many credits.
+- Per-course data, which would let the analysis move from "had carryovers," a coarse semester-level count, to which courses and how many credits
